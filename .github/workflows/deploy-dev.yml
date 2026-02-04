@@ -28,21 +28,33 @@ jobs:
           echo "$DEV_SSH_KEY" > dev_key.pem
           chmod 600 dev_key.pem
 
+          ssh -i dev_key.pem -o StrictHostKeyChecking=no $DEV_USER@$DEV_HOST << 'EOF'
+            set -e
+            BASE_DIR=/var/www/app
+
+            mkdir -p $BASE_DIR/releases/dev
+            mkdir -p $BASE_DIR/venv
+
+            if [ ! -d "$BASE_DIR/venv/bin" ]; then
+              python3 -m venv $BASE_DIR/venv
+            fi
+          EOF
+
           rsync -avz \
             -e "ssh -i dev_key.pem -o StrictHostKeyChecking=no" \
-            app/ $DEV_USER@$DEV_HOST:/var/www/app/
+            app/ $DEV_USER@$DEV_HOST:/var/www/app/releases/dev/
 
-      - name: Restart application
-        env:
-          DEV_HOST: ${{ secrets.DEV_HOST }}
-          DEV_USER: ${{ secrets.DEV_USER }}
-          DEV_SSH_KEY: ${{ secrets.DEV_SSH_KEY }}
-        run: |
-          ssh -i dev_key.pem -o StrictHostKeyChecking=no \
-            $DEV_USER@$DEV_HOST "sudo systemctl restart app"
+          ssh -i dev_key.pem -o StrictHostKeyChecking=no $DEV_USER@$DEV_HOST << 'EOF'
+            set -e
+            BASE_DIR=/var/www/app
+
+            ln -sfn $BASE_DIR/releases/dev $BASE_DIR/current
+            $BASE_DIR/venv/bin/pip install -r $BASE_DIR/current/sample-app/requirements.txt
+            sudo systemctl restart app
+          EOF
 
       - name: Health check
         run: |
           sleep 5
-          curl -f http://${{ secrets.DEV_HOST }} || exit 1
+          curl -f http://${{ secrets.DEV_HOST }}:8080
 
