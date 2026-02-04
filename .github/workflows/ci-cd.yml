@@ -1,5 +1,4 @@
-.github/workflows/ci-cd.yml
-name: CI-CD Pipeline (Build + Deploy DEV)
+name: Unified CI/CD Pipeline (DEV)
 
 on:
   push:
@@ -19,10 +18,6 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
-
-      - name: Install build dependencies
-        run: |
-          python -m pip install --upgrade pip
 
       - name: Validate application
         run: |
