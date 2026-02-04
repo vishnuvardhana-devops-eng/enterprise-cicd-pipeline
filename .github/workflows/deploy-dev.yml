@@ -5,10 +5,13 @@ on:
     workflows: ["Continuous Integration"]
     types:
       - completed
+<<<<<<< HEAD
 
 permissions:
   actions: read
   contents: read
+=======
+>>>>>>> eeaff35 (Trigger DEV deploy after successful CI using workflow_run)
 
 jobs:
   deploy-dev:
