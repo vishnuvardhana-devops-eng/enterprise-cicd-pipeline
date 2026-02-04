@@ -6,13 +6,17 @@ on:
     types:
       - completed
 
+permissions:
+  actions: read
+  contents: read
+
 jobs:
   deploy-dev:
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
     steps:
-      - name: Download build artifact
+      - name: Download build artifact from CI
         uses: actions/download-artifact@v4
         with:
           name: app-build
@@ -33,11 +37,14 @@ jobs:
 
           ssh -i dev_key.pem -o StrictHostKeyChecking=no $DEV_USER@$DEV_HOST << 'EOF'
             set -e
+
             BASE_DIR=/var/www/app
 
+            # Create directories
             mkdir -p $BASE_DIR/releases/dev
             mkdir -p $BASE_DIR/venv
 
+            # Create venv if not exists
             if [ ! -d "$BASE_DIR/venv/bin" ]; then
               python3 -m venv $BASE_DIR/venv
             fi
@@ -49,10 +56,16 @@ jobs:
 
           ssh -i dev_key.pem -o StrictHostKeyChecking=no $DEV_USER@$DEV_HOST << 'EOF'
             set -e
+
             BASE_DIR=/var/www/app
 
+            # Point current to latest dev release
             ln -sfn $BASE_DIR/releases/dev $BASE_DIR/current
+
+            # Install dependencies
             $BASE_DIR/venv/bin/pip install -r $BASE_DIR/current/sample-app/requirements.txt
+
+            # Restart service
             sudo systemctl restart app
           EOF
 
